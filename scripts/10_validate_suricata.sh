@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -euo pipefail
+set -Eeuo pipefail
 
 need() { command -v "$1" >/dev/null 2>&1 || { echo "Missing dependency: $1" >&2; exit 1; }; }
 need suricata
@@ -11,5 +11,13 @@ if [[ ! -f "$CFG" ]]; then
   exit 1
 fi
 
-suricata -T -c "$CFG" -S /dev/null >/dev/null
-echo "Suricata config validation ok."
+# Suricata -T needs a writable log directory, even for syntax-only validation.
+# The caller may supply LOG_DIR; GitHub Actions provides RUNNER_TEMP.
+LOG_DIR="${LOG_DIR:-${RUNNER_TEMP:-${TMPDIR:-/tmp}}}"
+[[ -d "$LOG_DIR" && -w "$LOG_DIR" ]] || {
+  echo "Missing or unwritable validation log directory: $LOG_DIR" >&2
+  exit 1
+}
+
+suricata -T -c "$CFG" -S /dev/null -l "$LOG_DIR" >/dev/null
+echo "Suricata config validation ok (syntax only, not detection coverage)."
