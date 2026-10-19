@@ -7,8 +7,8 @@ need suricata
 CFG="${CFG:-configs/suricata.yaml}"
 
 if [[ ! -f "$CFG" ]]; then
-  echo "No config present yet: $CFG"
-  exit 0
+  echo "Missing config: $CFG" >&2
+  exit 1
 fi
 
 suricata -T -c "$CFG" -S /dev/null >/dev/null
